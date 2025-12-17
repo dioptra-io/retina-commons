@@ -36,9 +36,9 @@ type ICMPv6NextHeader struct {
 }
 
 type NextHeader struct {
-	ICMPNextHeader   *ICMPNextHeader   `json:"icmp_next_header"`
-	UDPNextHeader    *UDPNextHeader    `json:"udp_next_header"`
-	ICMPv6NextHeader *ICMPv6NextHeader `json:"icmpv6_next_header"`
+	ICMPNextHeader   *ICMPNextHeader   `json:"icmp_next_header,omitempty"`
+	UDPNextHeader    *UDPNextHeader    `json:"udp_next_header,omitempty"`
+	ICMPv6NextHeader *ICMPv6NextHeader `json:"icmpv6_next_header,omitempty"`
 }
 
 type ProbingDirective struct {
