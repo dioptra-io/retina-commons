@@ -1,5 +1,8 @@
 // Copyright (c) 2025 Dioptra
 // SPDX-License-Identifier: MIT
+//
+// These are the API types that are commonly used by the retina components. Please refer to the FSD and DSD for
+// understanding the definitions.
 package api
 
 import (
@@ -153,6 +156,12 @@ type SystemStatus struct {
 	// active agent should probe at ~50 probes/second and generator should generate 25 PDs/second per each agent since
 	// one directive causes two probes.
 	GlobalProbingRatePSPA uint `json:"global_probing_rate_pspa"`
+
+	// ProbingImpactLimitMS is the time in milliseconds to wait before probing the same IP address again.
+	ProbingImpactLimitMS uint `json:"probing_impact_limit_ms"`
+
+	// DisallowedDestinationAddresses is a list of IP Addresses that the generator should not generate probes towards.
+	DisallowedDestinationAddresses []net.IP `json:"disallowed_destination_addresses"`
 
 	// ActiveAgentIDs is the list of agent identifiers currently considered active and eligible
 	// to receive probing directives.
