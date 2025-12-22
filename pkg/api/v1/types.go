@@ -106,8 +106,8 @@ type Info struct {
 	// ReplyAddress is the IP address observed in the received reply (e.g., router interface address).
 	ReplyAddress net.IP `json:"reply_address"`
 
-	// ProbePayloadSize is the probe payload size (bytes). Keep in mind uint8 caps at 255.
-	ProbePayloadSize uint8 `json:"probe_payload_size"`
+	// ProbePayloadSize is the probe payload size (bytes). Keep in mind uint16 caps at 65535.
+	ProbePayloadSize uint16 `json:"probe_payload_size"`
 
 	// SentTimestamp is when the probe packet was sent.
 	SentTimestamp time.Time `json:"sent_timestamp"`
