@@ -100,14 +100,14 @@ type Agent struct {
 // Info describes a single probe/response observation at a given TTL hop. It records addressing, payload size, and
 // send/receive timestamps for RTT computation and timing analysis.
 type Info struct {
-	// TTL is the TTL/hop-limit used for the probe that produced this observation.
-	TTL uint8 `json:"ttl"`
+	// ProbeTTL is the ProbeTTL/hop-limit used for the probe that produced this observation.
+	ProbeTTL uint8 `json:"probe_ttl"`
 
 	// ReplyAddress is the IP address observed in the received reply (e.g., router interface address).
 	ReplyAddress net.IP `json:"reply_address"`
 
-	// PayloadSize is the probe payload size (bytes). Keep in mind uint8 caps at 255.
-	PayloadSize uint8 `json:"payload_size"`
+	// ProbePayloadSize is the probe payload size (bytes). Keep in mind uint8 caps at 255.
+	ProbePayloadSize uint8 `json:"probe_payload_size"`
 
 	// SentTimestamp is when the probe packet was sent.
 	SentTimestamp time.Time `json:"sent_timestamp"`
