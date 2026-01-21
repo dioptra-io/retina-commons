@@ -167,3 +167,11 @@ type SystemStatus struct {
 	// to receive probing directives.
 	ActiveAgentIDs []string `json:"active_agent_ids"`
 }
+
+// AgentInfo is the struct the agent sends to the orchestration upon connecting.
+// It contains some information to identify the agent.
+type AgentInfo struct {
+	// AgentID is used to identify the origin of the connection between the
+	// agent and the orchestrator.
+	AgentID string `json:"agent_id"`
+}
