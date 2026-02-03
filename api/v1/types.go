@@ -145,6 +145,10 @@ type ForwardingInfoElement struct {
 	// Agent identifies the vantage point that produced this record.
 	Agent Agent `json:"agent"`
 
+	// ProbingDirectiveID is the identifier used to match the
+	// ForwardingInfoElement and the originator ProbingDirective.
+	ProbingDirectiveID uint64 `json:"probing_directive_id"`
+
 	// IPVersion indicates whether the observation is IPv4 or IPv6.
 	IPVersion IPVersion `json:"ip_version"`
 
