@@ -1,5 +1,8 @@
 // Copyright (c) 2025 Dioptra
 // SPDX-License-Identifier: MIT
+//
+// These are the API types that are commonly used by the retina components. Please refer to the FSD and DSD for
+// understanding the definitions.
 package api
 
 import (
@@ -71,6 +74,9 @@ type NextHeader struct {
 // the target address, the TTL to probe near the destination, and any protocol-specific header parameters required to
 // craft the probe packet.
 type ProbingDirective struct {
+	// ID identifies the ProbingDirective, it is given by the generator.
+	ID uint64
+
 	// IPVersion selects IPv4 vs IPv6 for the probe packet.
 	IPVersion IPVersion `json:"ip_version"`
 
@@ -100,14 +106,14 @@ type Agent struct {
 // Info describes a single probe/response observation at a given TTL hop. It records addressing, payload size, and
 // send/receive timestamps for RTT computation and timing analysis.
 type Info struct {
-	// TTL is the TTL/hop-limit used for the probe that produced this observation.
-	TTL uint8 `json:"ttl"`
+	// ProbeTTL is the ProbeTTL/hop-limit used for the probe that produced this observation.
+	ProbeTTL uint8 `json:"probe_ttl"`
 
 	// ReplyAddress is the IP address observed in the received reply (e.g., router interface address).
 	ReplyAddress net.IP `json:"reply_address"`
 
-	// PayloadSize is the probe payload size (bytes). Keep in mind uint8 caps at 255.
-	PayloadSize uint8 `json:"payload_size"`
+	// ProbePayloadSize is the probe payload size (bytes). Keep in mind uint16 caps at 65535.
+	ProbePayloadSize uint16 `json:"probe_payload_size"`
 
 	// SentTimestamp is when the probe packet was sent.
 	SentTimestamp time.Time `json:"sent_timestamp"`
@@ -154,7 +160,31 @@ type SystemStatus struct {
 	// one directive causes two probes.
 	GlobalProbingRatePSPA uint `json:"global_probing_rate_pspa"`
 
+	// ProbingImpactLimitMS is the time in milliseconds to wait before probing the same IP address again.
+	ProbingImpactLimitMS uint `json:"probing_impact_limit_ms"`
+
+	// DisallowedDestinationAddresses is a list of IP Addresses that the generator should not generate probes towards.
+	DisallowedDestinationAddresses []net.IP `json:"disallowed_destination_addresses"`
+
 	// ActiveAgentIDs is the list of agent identifiers currently considered active and eligible
 	// to receive probing directives.
 	ActiveAgentIDs []string `json:"active_agent_ids"`
+}
+
+// AuthRequest is sent by agent immediately after connecting to prove identity.
+type AuthRequest struct {
+	// Which agent is connecting
+	AgentID string `json:"agent_id"`
+
+	// Shared secret for authentication
+	Secret string `json:"secret"`
+}
+
+// AuthResponse is sent by orchestrator after validating the agent's secret.
+type AuthResponse struct {
+	// Authenticated true if secret is valid
+	Authenticated bool `json:"authenticated"`
+
+	// Message is optional error message
+	Message string `json:"message,omitempty"`
 }
