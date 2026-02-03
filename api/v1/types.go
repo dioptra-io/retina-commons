@@ -74,6 +74,9 @@ type NextHeader struct {
 // the target address, the TTL to probe near the destination, and any protocol-specific header parameters required to
 // craft the probe packet.
 type ProbingDirective struct {
+	// ID identifies the ProbingDirective, it is given by the generator.
+	ID uint64
+
 	// IPVersion selects IPv4 vs IPv6 for the probe packet.
 	IPVersion IPVersion `json:"ip_version"`
 
@@ -168,10 +171,20 @@ type SystemStatus struct {
 	ActiveAgentIDs []string `json:"active_agent_ids"`
 }
 
-// AgentInfo is the struct the agent sends to the orchestration upon connecting.
-// It contains some information to identify the agent.
-type AgentInfo struct {
-	// AgentID is used to identify the origin of the connection between the
-	// agent and the orchestrator.
+// AuthRequest is sent by agent immediately after connecting to prove identity.
+type AuthRequest struct {
+	// Which agent is connecting
 	AgentID string `json:"agent_id"`
+
+	// Shared secret for authentication
+	Secret string `json:"secret"`
+}
+
+// AuthResponse is sent by orchestrator after validating the agent's secret.
+type AuthResponse struct {
+	// Authenticated true if secret is valid
+	Authenticated bool `json:"authenticated"`
+
+	// Message is optional error message
+	Message string `json:"message,omitempty"`
 }
