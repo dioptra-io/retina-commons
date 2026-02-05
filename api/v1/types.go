@@ -1,7 +1,8 @@
 // Copyright (c) 2025 Dioptra
 // SPDX-License-Identifier: MIT
 //
-// These are the API types that are commonly used by the retina components. Please refer to the FSD and DSD for
+// These are the API types that are commonly used by the retina components.
+// Please refer to the FSD and DSD for
 // understanding the definitions.
 package api
 
@@ -10,8 +11,8 @@ import (
 	"time"
 )
 
-// IPVersion identifies the IP version used for a probe/observation (IPv4 or IPv6). It is encoded as the conventional
-// version number (4 or 6).
+// IPVersion identifies the IP version used for a probe/observation (IPv4 or
+// IPv6). It is encoded as the conventional version number (4 or 6).
 type IPVersion uint8
 
 const (
@@ -21,8 +22,9 @@ const (
 	TypeIPv6 IPVersion = 6
 )
 
-// Protocol identifies the L4 protocol carried by the IP packet (with the exception of ICMP and ICMPv6). Values match
-// the IANA IP Protocol Numbers (e.g., UDP=17, ICMP=1, ICMPv6=58).
+// Protocol identifies the L4 protocol carried by the IP packet (with the
+// exception of ICMP and ICMPv6). Values match the IANA IP Protocol Numbers
+// (e.g., UDP=17, ICMP=1, ICMPv6=58).
 type Protocol uint8
 
 const (
@@ -34,8 +36,9 @@ const (
 	ICMPv6 Protocol = 58
 )
 
-// ICMPNextHeader carries protocol-specific header fields for ICMP probes/replies. The fields are stored as two 16-bit
-// words to preserve raw header bits across different ICMP message types.
+// ICMPNextHeader carries protocol-specific header fields for ICMP
+// probes/replies. The fields are stored as two 16-bit words to preserve raw
+// header bits across different ICMP message types.
 type ICMPNextHeader struct {
 	FirstHalfWord  uint16 `json:"first_half_word"`
 	SecondHalfWord uint16 `json:"second_half_word"`
@@ -50,15 +53,17 @@ type UDPNextHeader struct {
 	DestinationPort uint16 `json:"destination_port"`
 }
 
-// ICMPv6NextHeader carries protocol-specific header fields for ICMPv6 probes/replies. The fields are stored as two
-// 16-bit words to preserve raw header bits across different ICMPv6 message types.
+// ICMPv6NextHeader carries protocol-specific header fields for ICMPv6
+// probes/replies. The fields are stored as two 16-bit words to preserve raw
+// header bits across different ICMPv6 message types.
 type ICMPv6NextHeader struct {
 	FirstHalfWord  uint16 `json:"first_half_word"`
 	SecondHalfWord uint16 `json:"second_half_word"`
 }
 
-// NextHeader is a tagged container for protocol-specific next-header metadata. Exactly one field should be non-nil,
-// matching the Protocol in the surrounding object. The omitempty tags keep JSON payloads compact.
+// NextHeader is a tagged container for protocol-specific next-header metadata.
+// Exactly one field should be non-nil, matching the Protocol in the surrounding
+// object. The omitempty tags keep JSON payloads compact.
 type NextHeader struct {
 	// ICMPNextHeader is set when Protocol == ICMP.
 	ICMPNextHeader *ICMPNextHeader `json:"icmp_next_header,omitempty"`
@@ -70,17 +75,20 @@ type NextHeader struct {
 	ICMPv6NextHeader *ICMPv6NextHeader `json:"icmpv6_next_header,omitempty"`
 }
 
-// ProbingDirective describes what an agent should probe and how. It specifies the IP version and transport protocol,
-// the target address, the TTL to probe near the destination, and any protocol-specific header parameters required to
+// ProbingDirective describes what an agent should probe and how. It specifies
+// the IP version and transport protocol, the target address, the TTL to probe
+// near the destination, and any protocol-specific header parameters required to
 // craft the probe packet.
 type ProbingDirective struct {
-	// ID identifies the ProbingDirective, it is given by the generator.
-	ID uint64
+	// ProbingDirectiveID identifies the ProbingDirective, it is given by the
+	// generator.
+	ProbingDirectiveID uint64 `json:"probing_directive_id"`
 
 	// IPVersion selects IPv4 vs IPv6 for the probe packet.
 	IPVersion IPVersion `json:"ip_version"`
 
-	// Protocol selects the transport protocol used for probing (ICMP/UDP/ICMPv6).
+	// Protocol selects the transport protocol used for probing
+	// (ICMP/UDP/ICMPv6).
 	Protocol Protocol `json:"protocol"`
 
 	// AgentID identifies the agent that should execute this directive.
@@ -89,7 +97,8 @@ type ProbingDirective struct {
 	// DestinationAddress is the target IP address to probe.
 	DestinationAddress net.IP `json:"destination_address"`
 
-	// NearTTL is the TTL/hop-limit value used for the "near" probe (typically close to the destination).
+	// NearTTL is the TTL/hop-limit value used for the "near" probe (typically
+	// close to the destination).
 	NearTTL uint8 `json:"near_ttl"`
 
 	// NextHeader contains protocol-specific fields needed to craft the packet
@@ -103,16 +112,20 @@ type Agent struct {
 	AgentID string `json:"agent_id"`
 }
 
-// Info describes a single probe/response observation at a given TTL hop. It records addressing, payload size, and
-// send/receive timestamps for RTT computation and timing analysis.
+// Info describes a single probe/response observation at a given TTL hop. It
+// records addressing, payload size, and send/receive timestamps for RTT
+// computation and timing analysis.
 type Info struct {
-	// ProbeTTL is the ProbeTTL/hop-limit used for the probe that produced this observation.
+	// ProbeTTL is the ProbeTTL/hop-limit used for the probe that produced this
+	// observation.
 	ProbeTTL uint8 `json:"probe_ttl"`
 
-	// ReplyAddress is the IP address observed in the received reply (e.g., router interface address).
+	// ReplyAddress is the IP address observed in the received reply (e.g.,
+	// router interface address).
 	ReplyAddress net.IP `json:"reply_address"`
 
-	// ProbePayloadSize is the probe payload size (bytes). Keep in mind uint16 caps at 65535.
+	// ProbePayloadSize is the probe payload size (bytes). Keep in mind uint16
+	// caps at 65535.
 	ProbePayloadSize uint16 `json:"probe_payload_size"`
 
 	// SentTimestamp is when the probe packet was sent.
@@ -122,14 +135,20 @@ type Info struct {
 	ReceivedTimestamp time.Time `json:"received_timestamp"`
 }
 
-// ForwardingInfoElement is a measurement record produced by an agent that captures forwarding behavior between a "near"
-// TTL and a "far" TTL for the same (source, destination, protocol, IP version) tuple.
+// ForwardingInfoElement is a measurement record produced by an agent that
+// captures forwarding behavior between a "near" TTL and a "far" TTL for the
+// same (source, destination, protocol, IP version) tuple.
 //
-// NearInfo/FarInfo typically represent observations at adjacent or related TTLs, enabling inference about forwarding
-// changes, load balancing, or hop behavior.
+// NearInfo/FarInfo typically represent observations at adjacent or related
+// TTLs, enabling inference about forwarding changes, load balancing, or hop
+// behavior.
 type ForwardingInfoElement struct {
 	// Agent identifies the vantage point that produced this record.
 	Agent Agent `json:"agent"`
+
+	// ProbingDirectiveID is the identifier used to match the
+	// ForwardingInfoElement and the originator ProbingDirective.
+	ProbingDirectiveID uint64 `json:"probing_directive_id"`
 
 	// IPVersion indicates whether the observation is IPv4 or IPv6.
 	IPVersion IPVersion `json:"ip_version"`
@@ -149,25 +168,29 @@ type ForwardingInfoElement struct {
 	// FarInfo is the observation corresponding to the "far" TTL/hop-limit.
 	FarInfo Info `json:"far_info"`
 
-	// ProductionTimestamp is when this record was produced/serialized by the agent/system.
+	// ProductionTimestamp is when this record was produced/serialized by the
+	// agent/system.
 	ProductionTimestamp time.Time `json:"production_timestamp"`
 }
 
 // SystemStatus summarizes current orchestration state relevant to probing load.
 type SystemStatus struct {
-	// GlobalProbingRatePSPA is the target probing rate in probes per second per agent (PSPA). Example: 50 means each
-	// active agent should probe at ~50 probes/second and generator should generate 25 PDs/second per each agent since
-	// one directive causes two probes.
+	// GlobalProbingRatePSPA is the target probing rate in probes per second per
+	// agent (PSPA). Example: 50 means each active agent should probe at ~50
+	// probes/second and generator should generate 25 PDs/second per each agent
+	// since one directive causes two probes.
 	GlobalProbingRatePSPA uint `json:"global_probing_rate_pspa"`
 
-	// ProbingImpactLimitMS is the time in milliseconds to wait before probing the same IP address again.
+	// ProbingImpactLimitMS is the time in milliseconds to wait before probing
+	// the same IP address again.
 	ProbingImpactLimitMS uint `json:"probing_impact_limit_ms"`
 
-	// DisallowedDestinationAddresses is a list of IP Addresses that the generator should not generate probes towards.
+	// DisallowedDestinationAddresses is a list of IP Addresses that the
+	// generator should not generate probes towards.
 	DisallowedDestinationAddresses []net.IP `json:"disallowed_destination_addresses"`
 
-	// ActiveAgentIDs is the list of agent identifiers currently considered active and eligible
-	// to receive probing directives.
+	// ActiveAgentIDs is the list of agent identifiers currently considered
+	// active and eligible to receive probing directives.
 	ActiveAgentIDs []string `json:"active_agent_ids"`
 }
 
@@ -180,7 +203,8 @@ type AuthRequest struct {
 	Secret string `json:"secret"`
 }
 
-// AuthResponse is sent by orchestrator after validating the agent's secret.
+// AuthResponse is sent by orchestrator after validating the agent's secret
+// after receiving the AuthRequest from the agent.
 type AuthResponse struct {
 	// Authenticated true if secret is valid
 	Authenticated bool `json:"authenticated"`
