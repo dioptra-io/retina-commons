@@ -80,8 +80,9 @@ type NextHeader struct {
 // near the destination, and any protocol-specific header parameters required to
 // craft the probe packet.
 type ProbingDirective struct {
-	// ID identifies the ProbingDirective, it is given by the generator.
-	ID uint64
+	// ProbingDirectiveID identifies the ProbingDirective, it is given by the
+	// generator.
+	ProbingDirectiveID uint64 `json:"probing_directive_id"`
 
 	// IPVersion selects IPv4 vs IPv6 for the probe packet.
 	IPVersion IPVersion `json:"ip_version"`
