@@ -110,11 +110,11 @@ type ForwardingInfoElement struct {
 
 	IPVersion          IPVersion `json:"ip_version"`
 	Protocol           Protocol  `json:"protocol"`
-	SourceAddress      net.IP    `json:"source_address"`
-	DestinationAddress net.IP    `json:"destination_address"`
+	SourceAddress      net.IP    `json:"source_address,omitempty"`
+	DestinationAddress net.IP    `json:"destination_address,omitempty"`
 
-	NearInfo Info `json:"near_info"`
-	FarInfo  Info `json:"far_info"`
+	NearInfo *Info `json:"near_info,omitempty"`
+	FarInfo  *Info `json:"far_info,omitempty"`
 
 	// ProductionTimestamp is when this record was created (not when probes were sent).
 	ProductionTimestamp time.Time `json:"production_timestamp"`
