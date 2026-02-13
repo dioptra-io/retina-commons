@@ -157,16 +157,16 @@ type ForwardingInfoElement struct {
 	Protocol Protocol `json:"protocol"`
 
 	// SourceAddress is the probe source IP address as seen/used by the agent.
-	SourceAddress net.IP `json:"source_address"`
+	SourceAddress net.IP `json:"source_address,omitempty"`
 
 	// DestinationAddress is the probe destination IP address.
-	DestinationAddress net.IP `json:"destination_address"`
+	DestinationAddress net.IP `json:"destination_address,omitempty"`
 
 	// NearInfo is the observation corresponding to the "near" TTL/hop-limit.
-	NearInfo Info `json:"near_info"`
+	NearInfo *Info `json:"near_info,omitempty"`
 
 	// FarInfo is the observation corresponding to the "far" TTL/hop-limit.
-	FarInfo Info `json:"far_info"`
+	FarInfo *Info `json:"far_info,omitempty"`
 
 	// ProductionTimestamp is when this record was produced/serialized by the
 	// agent/system.
