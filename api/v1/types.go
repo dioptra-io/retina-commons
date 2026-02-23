@@ -102,6 +102,8 @@ type Info struct {
 // ForwardingInfoElement captures probe results at two consecutive TTL values.
 // Comparing the near and far observations reveals forwarding behavior such as
 // load balancing or path changes.
+//
+// NearInfo and FarInfo will be nil when no response was received for that probe.
 type ForwardingInfoElement struct {
 	Agent Agent `json:"agent"`
 
