@@ -105,7 +105,8 @@ type Info struct {
 //
 // NearInfo and FarInfo will be nil when no response was received for that probe.
 type ForwardingInfoElement struct {
-	Agent Agent `json:"agent"`
+	Agent          Agent  `json:"agent"`
+	SequenceNumber uint64 `json:"sequence_number"`
 
 	// ProbingDirectiveID links this result to its originating directive.
 	ProbingDirectiveID uint64 `json:"probing_directive_id"`
