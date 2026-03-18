@@ -102,8 +102,6 @@ type Info struct {
 // ForwardingInfoElement captures probe results at two consecutive TTL values.
 // Comparing the near and far observations reveals forwarding behavior such as
 // load balancing or path changes.
-//
-// NearInfo and FarInfo will be nil when no response was received for that probe.
 type ForwardingInfoElement struct {
 	Agent          Agent  `json:"agent"`
 	SequenceNumber uint64 `json:"sequence_number"`
@@ -113,11 +111,11 @@ type ForwardingInfoElement struct {
 
 	IPVersion          IPVersion `json:"ip_version"`
 	Protocol           Protocol  `json:"protocol"`
-	SourceAddress      net.IP    `json:"source_address,omitempty"`
-	DestinationAddress net.IP    `json:"destination_address,omitempty"`
+	SourceAddress      net.IP    `json:"source_address"`
+	DestinationAddress net.IP    `json:"destination_address"`
 
-	NearInfo *Info `json:"near_info,omitempty"`
-	FarInfo  *Info `json:"far_info,omitempty"`
+	NearInfo Info `json:"near_info"`
+	FarInfo  Info `json:"far_info"`
 
 	// ProductionTimestamp is when this record was created (not when probes were sent).
 	ProductionTimestamp time.Time `json:"production_timestamp"`

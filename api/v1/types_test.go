@@ -205,13 +205,13 @@ func TestForwardingInfoElement_JSON(t *testing.T) {
 		Protocol:           UDP,
 		SourceAddress:      net.ParseIP("192.168.1.1"),
 		DestinationAddress: net.ParseIP("8.8.8.8"),
-		NearInfo: &Info{
+		NearInfo: Info{
 			ProbeTTL:          10,
 			ReplyAddress:      net.ParseIP("10.0.0.1"),
 			SentTimestamp:     nearSent,
 			ReceivedTimestamp: nearRecv,
 		},
-		FarInfo: &Info{
+		FarInfo: Info{
 			ProbeTTL:          11,
 			ReplyAddress:      net.ParseIP("10.0.0.2"),
 			SentTimestamp:     farSent,
@@ -229,14 +229,6 @@ func TestForwardingInfoElement_JSON(t *testing.T) {
 	if decoded.ProbingDirectiveID != 999 {
 		t.Errorf("ProbingDirectiveID = %d, want 999", decoded.ProbingDirectiveID)
 	}
-	if decoded.NearInfo == nil {
-		t.Errorf("NearInfo is nil, want non-nil")
-		return
-	}
-	if decoded.FarInfo == nil {
-		t.Errorf("FarInfo is nil, want non-nil")
-		return
-	}
 	if decoded.NearInfo.ProbeTTL != 10 {
 		t.Errorf("NearInfo.ProbeTTL = %d, want 10", decoded.NearInfo.ProbeTTL)
 	}
@@ -251,47 +243,6 @@ func TestForwardingInfoElement_JSON(t *testing.T) {
 	}
 	if decoded.FarInfo.ReplyAddress.String() != "10.0.0.2" {
 		t.Errorf("FarInfo.ReplyAddress = %s, want 10.0.0.2", decoded.FarInfo.ReplyAddress)
-	}
-}
-
-// TestForwardingInfoElement_JSON_NilInfo verifies that ForwardingInfoElement
-// serializes correctly when NearInfo and FarInfo are nil (i.e., no probe
-// response was received for one or both TTLs).
-func TestForwardingInfoElement_JSON_NilInfo(t *testing.T) {
-	t.Parallel()
-
-	now := time.Now().UTC().Truncate(time.Second)
-
-	original := &ForwardingInfoElement{
-		Agent:               Agent{AgentID: "test-agent"},
-		ProbingDirectiveID:  42,
-		IPVersion:           IPv4,
-		Protocol:            UDP,
-		SourceAddress:       net.ParseIP("192.168.1.1"),
-		DestinationAddress:  net.ParseIP("8.8.8.8"),
-		NearInfo:            nil, // no response received at near TTL
-		FarInfo:             nil, // no response received at far TTL
-		ProductionTimestamp: now,
-	}
-
-	var decoded ForwardingInfoElement
-	jsonRoundTrip(t, original, &decoded)
-
-	if decoded.NearInfo != nil {
-		t.Errorf("NearInfo = %+v, want nil", decoded.NearInfo)
-	}
-	if decoded.FarInfo != nil {
-		t.Errorf("FarInfo = %+v, want nil", decoded.FarInfo)
-	}
-
-	// Verify omitempty: nil fields should not appear in the JSON output.
-	data := mustMarshal(t, original)
-	jsonStr := string(data)
-	if contains(jsonStr, "near_info") {
-		t.Error("JSON should not contain 'near_info' when nil (omitempty)")
-	}
-	if contains(jsonStr, "far_info") {
-		t.Error("JSON should not contain 'far_info' when nil (omitempty)")
 	}
 }
 
