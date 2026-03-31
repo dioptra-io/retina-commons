@@ -67,12 +67,6 @@ go test ./...
 
 **Note on coverage**: The test suite reports `coverage: [no statements]` because this package contains only type definitions and constants. This is expected — the tests verify the JSON serialization contract and omitempty behavior across the wire protocol.
 
-## Related Projects
-
-- [retina-generator](https://github.com/dioptra-io/retina-generator) - Creates probing directives based on measurement strategy
-- [retina-orchestrator](https://github.com/dioptra-io/retina-orchestrator) - Distributes directives to agents and collects forwarding information elements
-- [retina-agent](https://github.com/dioptra-io/retina-agent) - Executes network probes and returns measurement results
-
 ## License
 
 MIT License - see [LICENSE](LICENSE) for details
