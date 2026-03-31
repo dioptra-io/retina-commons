@@ -3,38 +3,19 @@
 
 package api
 
-// These tests verify the JSON serialization contract between retina-agent
-// and the orchestrator. While the api package contains only type definitions
-// (no executable code), these tests serve critical purposes:
-//
-// 1. Protocol Contract Verification: Ensures JSON field names, types, and
-//    encoding remain stable across versions. Changes that break compatibility
-//    (renamed fields, altered tags, type changes) are caught immediately.
-//
-// 2. Edge Case Validation: JSON marshaling has subtle behaviors (nil vs empty
-//    slices, IP address formats, time precision, omitempty semantics) that
-//    aren't obvious from struct definitions alone.
-//
-// 3. Documentation: Tests show how each type is used and what the wire format
-//    looks like, helping developers understand the protocol without reverse-
-//    engineering production traffic.
-//
-// 4. Refactoring Safety: If internal representations change (e.g., switching
-//    from net.IP to netip.Addr), tests confirm the JSON output stays compatible.
-//
-// Note: Coverage tools report "no statements" for this package because it
-// contains only data structures. This is expected and correct.
+// These tests verify the JSON serialization contract between retina components.
+// The api package contains only type definitions, so coverage tools will report
+// "no statements" — this is expected.
 
 import (
 	"encoding/json"
 	"net"
+	"strings"
 	"testing"
 	"time"
 )
 
-// ============================================================================
-// TEST HELPERS
-// ============================================================================
+// -- test helpers -------------------------------------------------------------
 
 // mustMarshal marshals v to JSON or fails the test.
 func mustMarshal(t *testing.T, v interface{}) []byte {
@@ -61,9 +42,7 @@ func jsonRoundTrip(t *testing.T, v interface{}, result interface{}) {
 	mustUnmarshal(t, data, result)
 }
 
-// ============================================================================
-// PROBING DIRECTIVE TESTS
-// ============================================================================
+// -- ProbingDirective ---------------------------------------------------------
 
 func TestProbingDirective_JSON_ICMP(t *testing.T) {
 	t.Parallel()
@@ -146,6 +125,9 @@ func TestProbingDirective_JSON_UDP(t *testing.T) {
 	if decoded.NextHeader.ICMPNextHeader != nil {
 		t.Error("ICMPNextHeader should be nil for UDP directive")
 	}
+	if decoded.NextHeader.ICMPv6NextHeader != nil {
+		t.Error("ICMPv6NextHeader should be nil for UDP directive")
+	}
 }
 
 func TestProbingDirective_JSON_IPv6(t *testing.T) {
@@ -183,14 +165,12 @@ func TestProbingDirective_JSON_IPv6(t *testing.T) {
 	}
 }
 
-// ============================================================================
-// FORWARDING INFO ELEMENT TESTS
-// ============================================================================
+// -- ForwardingInfoElement ----------------------------------------------------
 
 func TestForwardingInfoElement_JSON(t *testing.T) {
 	t.Parallel()
 
-	now := time.Now().UTC().Truncate(time.Second) // Truncate for JSON precision
+	now := time.Now().UTC().Round(0) // Round(0) strips monotonic clock reading
 	nearSent := now.Add(-10 * time.Millisecond)
 	nearRecv := now.Add(-5 * time.Millisecond)
 	farSent := now.Add(-4 * time.Millisecond)
@@ -260,7 +240,7 @@ func TestForwardingInfoElement_JSON(t *testing.T) {
 func TestForwardingInfoElement_JSON_NilInfo(t *testing.T) {
 	t.Parallel()
 
-	now := time.Now().UTC().Truncate(time.Second)
+	now := time.Now().UTC().Round(0)
 
 	original := &ForwardingInfoElement{
 		Agent:               Agent{AgentID: "test-agent"},
@@ -287,17 +267,15 @@ func TestForwardingInfoElement_JSON_NilInfo(t *testing.T) {
 	// Verify omitempty: nil fields should not appear in the JSON output.
 	data := mustMarshal(t, original)
 	jsonStr := string(data)
-	if contains(jsonStr, "near_info") {
+	if strings.Contains(jsonStr, "near_info") {
 		t.Error("JSON should not contain 'near_info' when nil (omitempty)")
 	}
-	if contains(jsonStr, "far_info") {
+	if strings.Contains(jsonStr, "far_info") {
 		t.Error("JSON should not contain 'far_info' when nil (omitempty)")
 	}
 }
 
-// ============================================================================
-// NEXT HEADER TESTS
-// ============================================================================
+// -- NextHeader ---------------------------------------------------------------
 
 func TestNextHeader_Omitempty_ICMP(t *testing.T) {
 	t.Parallel()
@@ -312,15 +290,13 @@ func TestNextHeader_Omitempty_ICMP(t *testing.T) {
 	data := mustMarshal(t, nh)
 	jsonStr := string(data)
 
-	// Should have ICMP fields
-	if !contains(jsonStr, "icmp_next_header") {
+	if !strings.Contains(jsonStr, "icmp_next_header") {
 		t.Error("JSON missing icmp_next_header")
 	}
-	// Should NOT have UDP or ICMPv6 fields (omitempty)
-	if contains(jsonStr, "udp_next_header") {
+	if strings.Contains(jsonStr, "udp_next_header") {
 		t.Error("JSON should not contain udp_next_header (omitempty)")
 	}
-	if contains(jsonStr, "icmpv6_next_header") {
+	if strings.Contains(jsonStr, "icmpv6_next_header") {
 		t.Error("JSON should not contain icmpv6_next_header (omitempty)")
 	}
 }
@@ -338,22 +314,18 @@ func TestNextHeader_Omitempty_UDP(t *testing.T) {
 	data := mustMarshal(t, nh)
 	jsonStr := string(data)
 
-	// Should have UDP fields
-	if !contains(jsonStr, "udp_next_header") {
+	if !strings.Contains(jsonStr, "udp_next_header") {
 		t.Error("JSON missing udp_next_header")
 	}
-	// Should NOT have ICMP or ICMPv6 fields
-	if contains(jsonStr, "icmp_next_header") && !contains(jsonStr, "icmpv6_next_header") {
+	if strings.Contains(jsonStr, "icmp_next_header") {
 		t.Error("JSON should not contain icmp_next_header (omitempty)")
 	}
-	if contains(jsonStr, "icmpv6_next_header") {
+	if strings.Contains(jsonStr, "icmpv6_next_header") {
 		t.Error("JSON should not contain icmpv6_next_header (omitempty)")
 	}
 }
 
-// ============================================================================
-// SYSTEM STATUS TESTS
-// ============================================================================
+// -- SystemStatus -------------------------------------------------------------
 
 func TestSystemStatus_JSON(t *testing.T) {
 	t.Parallel()
@@ -402,14 +374,12 @@ func TestSystemStatus_Duration_Nanoseconds(t *testing.T) {
 	jsonStr := string(data)
 
 	// Should contain nanoseconds (2 seconds = 2000000000 nanoseconds)
-	if !contains(jsonStr, "2000000000") {
+	if !strings.Contains(jsonStr, "2000000000") {
 		t.Errorf("JSON should contain duration as nanoseconds: %s", jsonStr)
 	}
 }
 
-// ============================================================================
-// AUTH TYPES TESTS
-// ============================================================================
+// -- Auth types ---------------------------------------------------------------
 
 func TestAuthRequest_JSON(t *testing.T) {
 	t.Parallel()
@@ -480,20 +450,17 @@ func TestAuthResponse_Omitempty_Message(t *testing.T) {
 	data := mustMarshal(t, original)
 	jsonStr := string(data)
 
-	// Should not contain "message" field when empty
-	if contains(jsonStr, "message") {
+	if strings.Contains(jsonStr, "message") {
 		t.Error("JSON should not contain 'message' field when empty (omitempty)")
 	}
 }
 
-// ============================================================================
-// INFO TESTS
-// ============================================================================
+// -- Info ---------------------------------------------------------------------
 
 func TestInfo_JSON(t *testing.T) {
 	t.Parallel()
 
-	now := time.Now().UTC().Truncate(time.Second)
+	now := time.Now().UTC().Round(0)
 	sent := now.Add(-10 * time.Millisecond)
 	recv := now
 
@@ -521,9 +488,7 @@ func TestInfo_JSON(t *testing.T) {
 	}
 }
 
-// ============================================================================
-// AGENT TESTS
-// ============================================================================
+// -- Agent --------------------------------------------------------------------
 
 func TestAgent_JSON(t *testing.T) {
 	t.Parallel()
@@ -540,9 +505,7 @@ func TestAgent_JSON(t *testing.T) {
 	}
 }
 
-// ============================================================================
-// IP VERSION AND PROTOCOL CONSTANTS TESTS
-// ============================================================================
+// -- IPVersion and Protocol constants -----------------------------------------
 
 func TestIPVersion_Values(t *testing.T) {
 	t.Parallel()
@@ -569,14 +532,11 @@ func TestProtocol_Values(t *testing.T) {
 	}
 }
 
-// ============================================================================
-// EDGE CASES
-// ============================================================================
+// -- edge cases ---------------------------------------------------------------
 
 func TestProbingDirective_ZeroValues(t *testing.T) {
 	t.Parallel()
 
-	// Test that zero values marshal/unmarshal correctly
 	original := &ProbingDirective{}
 
 	var decoded ProbingDirective
@@ -603,22 +563,4 @@ func TestForwardingInfoElement_EmptyAgent(t *testing.T) {
 	if decoded.Agent.AgentID != "" {
 		t.Errorf("Expected empty AgentID, got %s", decoded.Agent.AgentID)
 	}
-}
-
-// ============================================================================
-// UTILITY FUNCTIONS
-// ============================================================================
-
-// contains checks if s contains substr.
-func contains(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || len(s) > len(substr) && stringContains(s, substr))
-}
-
-func stringContains(s, substr string) bool {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return true
-		}
-	}
-	return false
 }
