@@ -15,8 +15,8 @@ import (
 type IPVersion uint8
 
 const (
-	IPv4 IPVersion = 4 // IP version 4
-	IPv6 IPVersion = 6 // IP version 6
+	IPv4 IPVersion = 4
+	IPv6 IPVersion = 6
 )
 
 // Protocol identifies the L4 protocol carried by the IP packet (with the
@@ -81,8 +81,7 @@ type ProbingDirective struct {
 	NextHeader NextHeader `json:"next_header"`
 }
 
-// Agent identifies the entity executing probes. May be extended with location
-// or capability metadata.
+// Agent identifies the entity executing probes.
 type Agent struct {
 	AgentID string `json:"agent_id"`
 }
