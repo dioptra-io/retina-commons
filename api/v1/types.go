@@ -92,7 +92,7 @@ type Info struct {
 	ProbeTTL uint8 `json:"probe_ttl"`
 
 	// ReplyAddress is the IP address in the reply (e.g., router interface address).
-	ReplyAddress net.IP `json:"reply_address"`
+	ReplyAddress net.IP `json:"reply_address" swaggertype:"string" format:"ip"`
 
 	SentTimestamp     time.Time `json:"sent_timestamp"`
 	ReceivedTimestamp time.Time `json:"received_timestamp"`
@@ -111,8 +111,8 @@ type ForwardingInfoElement struct {
 
 	IPVersion          IPVersion `json:"ip_version"`
 	Protocol           Protocol  `json:"protocol"`
-	SourceAddress      net.IP    `json:"source_address,omitempty"`
-	DestinationAddress net.IP    `json:"destination_address,omitempty"`
+	SourceAddress      net.IP    `json:"source_address,omitempty" swaggertype:"string" format:"ip"`
+	DestinationAddress net.IP    `json:"destination_address,omitempty" swaggertype:"string" format:"ip"`
 
 	NearInfo *Info `json:"near_info,omitempty"`
 	FarInfo  *Info `json:"far_info,omitempty"`
