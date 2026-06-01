@@ -325,60 +325,6 @@ func TestNextHeader_Omitempty_UDP(t *testing.T) {
 	}
 }
 
-// -- SystemStatus -------------------------------------------------------------
-
-func TestSystemStatus_JSON(t *testing.T) {
-	t.Parallel()
-
-	original := &SystemStatus{
-		GlobalProbingRatePSPA: 50,
-		ProbingImpactLimit:    500 * time.Millisecond,
-		DisallowedDestinationAddresses: []net.IP{
-			net.ParseIP("192.168.1.0"),
-			net.ParseIP("10.0.0.0"),
-		},
-		ActiveAgentIDs: []string{"agent-1", "agent-2", "agent-3"},
-	}
-
-	var decoded SystemStatus
-	jsonRoundTrip(t, original, &decoded)
-
-	if decoded.GlobalProbingRatePSPA != 50 {
-		t.Errorf("GlobalProbingRatePSPA = %d, want 50", decoded.GlobalProbingRatePSPA)
-	}
-	if decoded.ProbingImpactLimit != 500*time.Millisecond {
-		t.Errorf("ProbingImpactLimit = %v, want 500ms", decoded.ProbingImpactLimit)
-	}
-	if len(decoded.DisallowedDestinationAddresses) != 2 {
-		t.Errorf("len(DisallowedDestinationAddresses) = %d, want 2", len(decoded.DisallowedDestinationAddresses))
-	}
-	if len(decoded.ActiveAgentIDs) != 3 {
-		t.Errorf("len(ActiveAgentIDs) = %d, want 3", len(decoded.ActiveAgentIDs))
-	}
-	if decoded.ActiveAgentIDs[0] != "agent-1" {
-		t.Errorf("ActiveAgentIDs[0] = %s, want agent-1", decoded.ActiveAgentIDs[0])
-	}
-}
-
-func TestSystemStatus_Duration_Nanoseconds(t *testing.T) {
-	t.Parallel()
-
-	// time.Duration marshals as int64 nanoseconds
-	original := &SystemStatus{
-		GlobalProbingRatePSPA: 10,
-		ProbingImpactLimit:    2 * time.Second,
-		ActiveAgentIDs:        []string{},
-	}
-
-	data := mustMarshal(t, original)
-	jsonStr := string(data)
-
-	// Should contain nanoseconds (2 seconds = 2000000000 nanoseconds)
-	if !strings.Contains(jsonStr, "2000000000") {
-		t.Errorf("JSON should contain duration as nanoseconds: %s", jsonStr)
-	}
-}
-
 // -- Auth types ---------------------------------------------------------------
 
 func TestAuthRequest_JSON(t *testing.T) {
