@@ -121,25 +121,6 @@ type ForwardingInfoElement struct {
 	ProductionTimestamp time.Time `json:"production_timestamp"`
 }
 
-// SystemStatus summarizes current orchestration state for coordinating
-// distributed probing across agents.
-type SystemStatus struct {
-	// GlobalProbingRatePSPA is the target probing rate per agent in probes/second.
-	// Note: Each ProbingDirective generates two probes (near + far TTL).
-	GlobalProbingRatePSPA uint `json:"global_probing_rate_pspa"`
-
-	// ProbingImpactLimit is the minimum time between probes that would elicit a
-	// response from the same IP address (to limit load on individual routers/hosts).
-	ProbingImpactLimit time.Duration `json:"probing_impact_limit"`
-
-	// DisallowedDestinationAddresses lists IPs excluded from probing
-	// (private addresses, reserved ranges, etc.).
-	DisallowedDestinationAddresses []net.IP `json:"disallowed_destination_addresses"`
-
-	// ActiveAgentIDs lists agents currently eligible to receive directives.
-	ActiveAgentIDs []string `json:"active_agent_ids"`
-}
-
 // AuthRequest is sent by the agent immediately after connecting to authenticate.
 type AuthRequest struct {
 	AgentID string `json:"agent_id"`
