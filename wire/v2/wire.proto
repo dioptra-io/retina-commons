@@ -1,0 +1,123 @@
+syntax = "proto3";
+
+package wire.v2;
+
+option go_package = "github.com/dioptra-io/retina-commons/wire/v2;wire";
+
+import "google/protobuf/timestamp.proto";
+
+// -- Enums --------------------------------------------------------------------
+
+// Values intentionally match IP version numbers (4, 6).
+enum IPVersion {
+  IP_VERSION_UNSPECIFIED = 0;
+  IP_VERSION_IPV4 = 4;
+  IP_VERSION_IPV6 = 6;
+}
+
+// Values intentionally match IANA protocol numbers (ICMP=1, UDP=17, ICMPv6=58).
+enum Protocol {
+  PROTOCOL_UNSPECIFIED = 0;
+  PROTOCOL_ICMP = 1;
+  PROTOCOL_UDP = 17;
+  PROTOCOL_ICMPV6 = 58;
+}
+
+// -- Common Messages ---------------------------------------------------------
+
+message Agent {
+  string agent_id = 1;
+}
+
+message Info {
+  uint32 probe_ttl = 1;
+
+  // Canonical textual IP address of the probe reply, without a port or
+  // zone identifier. Absent (empty) when the probe timed out or produced
+  // no reply — see ForwardingInfoElement.near_info/far_info.
+  string reply_address = 2;
+
+  // Always UTC. Absent (unset) has the same meaning as reply_address
+  // being empty: no reply was received.
+  google.protobuf.Timestamp sent_timestamp = 3;
+  google.protobuf.Timestamp received_timestamp = 4;
+}
+
+// -- Next Headers (oneof Polymorphism) ----------------------------------------
+
+message ICMPNextHeader {
+  uint32 first_half_word = 1;
+  uint32 second_half_word = 2;
+}
+
+message UDPNextHeader {
+  uint32 source_port = 1;
+  uint32 destination_port = 2;
+}
+
+message ICMPv6NextHeader {
+  uint32 first_half_word = 1;
+  uint32 second_half_word = 2;
+}
+
+message NextHeader {
+  oneof header {
+    ICMPNextHeader icmp_next_header = 1;
+    UDPNextHeader udp_next_header = 2;
+    ICMPv6NextHeader icmpv6_next_header = 3;
+  }
+}
+
+// -- Authentication ---------------------------------------------------------
+
+// AuthRequest/AuthResponse must only be exchanged over a mutually
+// authenticated TLS connection. secret must never be logged.
+message AuthRequest {
+  string agent_id = 1;
+  string secret = 2;
+}
+
+message AuthResponse {
+  bool authenticated = 1;
+  string message = 2;
+}
+
+// -- Directives and Data Flow -------------------------------------------------
+
+message ProbingDirective {
+  uint64 probing_directive_id = 1;
+  IPVersion ip_version = 2;
+  Protocol protocol = 3;
+  string agent_id = 4;
+
+  // Canonical textual IP address, without a port or zone identifier.
+  string destination_address = 5;
+
+  // TTL sent in the near-side probe. The far-side probe is sent at
+  // near_ttl + 1; see ForwardingInfoElement.near_info/far_info for the
+  // corresponding paired observations.
+  uint32 near_ttl = 6;
+
+  NextHeader next_header = 7;
+}
+
+message ForwardingInfoElement {
+  Agent agent = 1;
+  uint64 probing_directive_id = 2;
+  IPVersion ip_version = 3;
+  Protocol protocol = 4;
+
+  // Canonical textual IP addresses, without a port or zone identifier.
+  string source_address = 5;
+  string destination_address = 6;
+
+  // near_info/far_info are the paired near/far-TTL probe observations
+  // (see ProbingDirective.near_ttl) used to detect forwarding behavior
+  // between adjacent hops. Absent when the corresponding probe timed
+  // out or produced no reply.
+  Info near_info = 7;
+  Info far_info = 8;
+
+  // Always UTC.
+  google.protobuf.Timestamp production_timestamp = 9;
+}
