@@ -27,6 +27,15 @@ import (
 
 // -- Test doubles -----------------------------------------------------------
 
+// closeQuietly closes c and discards the error — a net.Pipe end never
+// fails to close in a way tests care about, and checking it at every
+// one of the many defer sites in this file would add noise without
+// catching real bugs. Used instead of a bare `.Close()`/`defer
+// x.Close()` so errcheck has something to be satisfied by.
+func closeQuietly(c io.Closer) {
+	_ = c.Close()
+}
+
 // shortWriteConn wraps a real net.Conn but caps each individual Write
 // call to maxPerWrite bytes, forcing writeFull's looping logic to
 // actually loop rather than succeed in a single call.
@@ -57,8 +66,8 @@ func (c *zeroWriteConn) Write(p []byte) (int, error) {
 
 func TestSendReceiveRoundTrip(t *testing.T) {
 	client, server := net.Pipe()
-	defer client.Close()
-	defer server.Close()
+	defer closeQuietly(client)
+	defer closeQuietly(server)
 
 	want := &wire.ProbingDirective{
 		ProbingDirectiveId: 42,
@@ -87,8 +96,8 @@ func TestSendReceiveRoundTrip(t *testing.T) {
 // Receive calls without stale fields leaking between messages.
 func TestReceiveReusesDestinationMessage(t *testing.T) {
 	client, server := net.Pipe()
-	defer client.Close()
-	defer server.Close()
+	defer closeQuietly(client)
+	defer closeQuietly(server)
 
 	first := &wire.ProbingDirective{ProbingDirectiveId: 1, DestinationAddress: "192.0.2.1"}
 	second := &wire.ProbingDirective{ProbingDirectiveId: 2} // no DestinationAddress
@@ -121,8 +130,8 @@ func TestReceiveReusesDestinationMessage(t *testing.T) {
 
 func TestSendRejectsOversizedPayload(t *testing.T) {
 	client, server := net.Pipe()
-	defer client.Close()
-	defer server.Close()
+	defer closeQuietly(client)
+	defer closeQuietly(server)
 
 	// A ReplyAddress string alone bigger than maxFrameSize guarantees
 	// the marshaled payload exceeds it too, regardless of field overhead.
@@ -139,8 +148,8 @@ func TestSendRejectsOversizedPayload(t *testing.T) {
 
 func TestReceiveRejectsOversizedDeclaredLength(t *testing.T) {
 	client, server := net.Pipe()
-	defer client.Close()
-	defer server.Close()
+	defer closeQuietly(client)
+	defer closeQuietly(server)
 
 	go func() {
 		header := []byte{0xFF, 0xFF, 0xFF, 0xFF} // declares ~4GB, way over maxFrameSize
@@ -161,8 +170,8 @@ func TestReceiveRejectsOversizedDeclaredLength(t *testing.T) {
 
 func TestSendHandlesShortWrites(t *testing.T) {
 	client, server := net.Pipe()
-	defer client.Close()
-	defer server.Close()
+	defer closeQuietly(client)
+	defer closeQuietly(server)
 
 	wrapped := &shortWriteConn{Conn: client, maxPerWrite: 1} // force many tiny writes
 	want := &wire.ProbingDirective{ProbingDirectiveId: 7, DestinationAddress: "192.0.2.1"}
@@ -184,7 +193,7 @@ func TestSendHandlesShortWrites(t *testing.T) {
 
 func TestWriteFullRejectsZeroByteWrite(t *testing.T) {
 	client, _ := net.Pipe()
-	defer client.Close()
+	defer closeQuietly(client)
 
 	wrapped := &zeroWriteConn{Conn: client}
 	err := writeFull(wrapped, []byte{1, 2, 3})
@@ -200,7 +209,7 @@ func TestReceivePartialHeaderThenEOF(t *testing.T) {
 
 	go func() {
 		_, _ = client.Write([]byte{0x00, 0x00}) // 2 of 4 header bytes
-		client.Close()                          // then hang up
+		closeQuietly(client)                    // then hang up
 	}()
 
 	var msg wire.ProbingDirective
@@ -221,7 +230,7 @@ func TestReceiveCompleteHeaderThenTruncatedPayload(t *testing.T) {
 		header[3] = 100 // declares a 100-byte payload
 		_, _ = client.Write(header)
 		_, _ = client.Write([]byte{1, 2, 3}) // deliver only 3 of 100 bytes
-		client.Close()
+		closeQuietly(client)
 	}()
 
 	var msg wire.ProbingDirective
@@ -261,7 +270,7 @@ func TestReceiveRejectsInvalidProtobuf(t *testing.T) {
 
 func TestReceiveTimesOutWithNoData(t *testing.T) {
 	_, server := net.Pipe()
-	defer server.Close()
+	defer closeQuietly(server)
 
 	err := Receive(server, 50*time.Millisecond, &wire.ProbingDirective{})
 	if err == nil {
@@ -275,8 +284,8 @@ func TestReceiveTimesOutWithNoData(t *testing.T) {
 
 func TestSendTimesOutWhenUnread(t *testing.T) {
 	client, server := net.Pipe()
-	defer server.Close()
-	defer client.Close()
+	defer closeQuietly(server)
+	defer closeQuietly(client)
 
 	err := Send(client, 50*time.Millisecond, &wire.ProbingDirective{DestinationAddress: "192.0.2.1"})
 	if err == nil {
@@ -298,7 +307,7 @@ func TestSendRejectsNilConn(t *testing.T) {
 
 func TestSendRejectsNilMessage(t *testing.T) {
 	client, _ := net.Pipe()
-	defer client.Close()
+	defer closeQuietly(client)
 	if err := Send(client, 0, nil); err == nil {
 		t.Error("expected error for nil message, got nil")
 	}
@@ -306,7 +315,7 @@ func TestSendRejectsNilMessage(t *testing.T) {
 
 func TestSendRejectsTypedNilMessage(t *testing.T) {
 	client, _ := net.Pipe()
-	defer client.Close()
+	defer closeQuietly(client)
 
 	var pd *wire.ProbingDirective // nil pointer
 	var msg proto.Message = pd    // non-nil interface wrapping a nil pointer
@@ -324,7 +333,7 @@ func TestReceiveRejectsNilConn(t *testing.T) {
 
 func TestReceiveRejectsNilMessage(t *testing.T) {
 	client, _ := net.Pipe()
-	defer client.Close()
+	defer closeQuietly(client)
 	if err := Receive(client, 0, nil); err == nil {
 		t.Error("expected error for nil message, got nil")
 	}
@@ -332,7 +341,7 @@ func TestReceiveRejectsNilMessage(t *testing.T) {
 
 func TestSendRejectsNegativeTimeout(t *testing.T) {
 	client, _ := net.Pipe()
-	defer client.Close()
+	defer closeQuietly(client)
 	if err := Send(client, -time.Second, &wire.ProbingDirective{DestinationAddress: "192.0.2.1"}); err == nil {
 		t.Error("expected error for negative timeout, got nil")
 	}
@@ -340,7 +349,7 @@ func TestSendRejectsNegativeTimeout(t *testing.T) {
 
 func TestReceiveRejectsNegativeTimeout(t *testing.T) {
 	client, _ := net.Pipe()
-	defer client.Close()
+	defer closeQuietly(client)
 	if err := Receive(client, -time.Second, &wire.ProbingDirective{}); err == nil {
 		t.Error("expected error for negative timeout, got nil")
 	}
@@ -367,8 +376,8 @@ func (c *failAfterHeaderConn) Write(p []byte) (int, error) {
 
 func TestSendFailsOnPayloadWriteError(t *testing.T) {
 	client, server := net.Pipe()
-	defer client.Close()
-	defer server.Close()
+	defer closeQuietly(client)
+	defer closeQuietly(server)
 
 	wrapped := &failAfterHeaderConn{Conn: client}
 
@@ -399,7 +408,7 @@ func (c *failAllWritesConn) Write(p []byte) (int, error) {
 
 func TestSendFailsOnHeaderWriteError(t *testing.T) {
 	client, _ := net.Pipe()
-	defer client.Close()
+	defer closeQuietly(client)
 
 	wrapped := &failAllWritesConn{Conn: client}
 	err := Send(wrapped, 0, &wire.ProbingDirective{DestinationAddress: "192.0.2.1"})
@@ -420,7 +429,7 @@ func (c *failSetWriteDeadlineConn) SetWriteDeadline(t time.Time) error {
 
 func TestSendFailsWhenSetWriteDeadlineErrors(t *testing.T) {
 	client, _ := net.Pipe()
-	defer client.Close()
+	defer closeQuietly(client)
 
 	wrapped := &failSetWriteDeadlineConn{Conn: client}
 	err := Send(wrapped, 0, &wire.ProbingDirective{DestinationAddress: "192.0.2.1"})
