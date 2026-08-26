@@ -287,13 +287,16 @@ func (pd ProbingDirective) ToProto() (*wire.ProbingDirective, error) {
 
 // ForwardingInfoElement mirrors wire.ForwardingInfoElement (see package
 // doc). NearInfo/FarInfo stay nilable pointers, preserving proto3's
-// optional-absent-means-timeout semantics.
+// optional-absent-means-timeout semantics. SourceAddress is likewise nil
+// when unavailable — a probe that gets no reply at all (both near and
+// far time out) has no source address to report, unlike
+// DestinationAddress, which is always known and required.
 type ForwardingInfoElement struct {
 	Agent               Agent
 	ProbingDirectiveID  uint64
 	IPVersion           wire.IPVersion
 	Protocol            wire.Protocol
-	SourceAddress       net.IP
+	SourceAddress       net.IP // nil if unavailable (e.g. both probes timed out)
 	DestinationAddress  net.IP
 	NearInfo            *Info // nil represents a timeout, same as proto3 optional-absent
 	FarInfo             *Info
@@ -301,10 +304,11 @@ type ForwardingInfoElement struct {
 }
 
 // ForwardingInfoElementFromProto converts a wire.ForwardingInfoElement to
-// a model ForwardingInfoElement. Returns an error if Agent, SourceAddress,
-// or DestinationAddress is missing/invalid, ProductionTimestamp is absent
+// a model ForwardingInfoElement. Returns an error if Agent or
+// DestinationAddress is missing/invalid, ProductionTimestamp is absent
 // or invalid, either NearInfo or FarInfo fails to convert, or fie is nil
-// (see package doc).
+// (see package doc). SourceAddress is optional — an empty wire string
+// converts to a nil net.IP without error.
 func ForwardingInfoElementFromProto(fie *wire.ForwardingInfoElement) (ForwardingInfoElement, error) {
 	if fie == nil {
 		return ForwardingInfoElement{}, fmt.Errorf("forwarding_info_element: absent")
@@ -313,7 +317,7 @@ func ForwardingInfoElementFromProto(fie *wire.ForwardingInfoElement) (Forwarding
 	if err != nil {
 		return ForwardingInfoElement{}, fmt.Errorf("agent: %w", err)
 	}
-	srcAddr, err := parseRequiredIP(fie.GetSourceAddress(), "source_address")
+	srcAddr, err := parseOptionalIP(fie.GetSourceAddress(), "source_address")
 	if err != nil {
 		return ForwardingInfoElement{}, err
 	}
@@ -351,13 +355,14 @@ func ForwardingInfoElementFromProto(fie *wire.ForwardingInfoElement) (Forwarding
 	return out, nil
 }
 
-// ToProto validates that SourceAddress and DestinationAddress are set
-// and well-formed, and ProductionTimestamp is valid (all required —
-// see package doc) before serializing, so a malformed model value
-// can't silently produce a wire message that FromProto would itself
-// reject.
+// ToProto validates DestinationAddress and ProductionTimestamp (required)
+// and, if SourceAddress is present, that it's well-formed — SourceAddress
+// itself is optional (a probe that gets no reply at all has no source
+// address to report; see package doc) — before serializing, so a
+// malformed model value can't silently produce a wire message that
+// FromProto would itself reject.
 func (fie ForwardingInfoElement) ToProto() (*wire.ForwardingInfoElement, error) {
-	if err := validateIP(fie.SourceAddress, true, "source_address"); err != nil {
+	if err := validateIP(fie.SourceAddress, false, "source_address"); err != nil {
 		return nil, err
 	}
 	if err := validateIP(fie.DestinationAddress, true, "destination_address"); err != nil {
