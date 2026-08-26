@@ -256,17 +256,7 @@ func TestForwardingInfoElementFromProtoRejectsMissingAgent(t *testing.T) {
 	}
 }
 
-func TestForwardingInfoElementFromProtoRejectsMissingAddresses(t *testing.T) {
-	missingSrc := &wire.ForwardingInfoElement{
-		Agent:               &wire.Agent{AgentId: "agent-1"},
-		SourceAddress:       "",
-		DestinationAddress:  "192.0.2.2",
-		ProductionTimestamp: timestamppb.New(time.Now()),
-	}
-	if _, err := ForwardingInfoElementFromProto(missingSrc); err == nil {
-		t.Error("expected error for missing source_address, got nil")
-	}
-
+func TestForwardingInfoElementFromProtoRejectsMissingDestination(t *testing.T) {
 	missingDest := &wire.ForwardingInfoElement{
 		Agent:               &wire.Agent{AgentId: "agent-1"},
 		SourceAddress:       "192.0.2.1",
@@ -278,19 +268,44 @@ func TestForwardingInfoElementFromProtoRejectsMissingAddresses(t *testing.T) {
 	}
 }
 
+// TestForwardingInfoElementFromProtoAcceptsMissingSource confirms
+// SourceAddress is optional, unlike DestinationAddress — a probe that
+// gets no reply at all (both near and far time out) has no source
+// address to report; see ForwardingInfoElement's doc comment.
+func TestForwardingInfoElementFromProtoAcceptsMissingSource(t *testing.T) {
+	proto := &wire.ForwardingInfoElement{
+		Agent:               &wire.Agent{AgentId: "agent-1"},
+		SourceAddress:       "",
+		DestinationAddress:  "192.0.2.2",
+		ProductionTimestamp: timestamppb.New(time.Now()),
+	}
+	got, err := ForwardingInfoElementFromProto(proto)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if got.SourceAddress != nil {
+		t.Errorf("SourceAddress: got %v, want nil", got.SourceAddress)
+	}
+}
+
 func TestForwardingInfoElementFromProtoRejectsNil(t *testing.T) {
 	if _, err := ForwardingInfoElementFromProto(nil); err == nil {
 		t.Error("expected error for nil wire.ForwardingInfoElement, got nil")
 	}
 }
 
-func TestForwardingInfoElementToProtoRejectsNilAddresses(t *testing.T) {
+// TestForwardingInfoElementToProtoRejectsNilDestination confirms
+// DestinationAddress is still required — unlike SourceAddress, which is
+// nil in this fixture too but no longer causes an error on its own (see
+// TestForwardingInfoElementToProtoRejectsInvalidDestination for the
+// source-valid/destination-nil case, which isolates this more precisely).
+func TestForwardingInfoElementToProtoRejectsNilDestination(t *testing.T) {
 	fie := ForwardingInfoElement{
 		Agent:               Agent{ID: "agent-1"},
 		ProductionTimestamp: time.Now(),
 	}
 	if _, err := fie.ToProto(); err == nil {
-		t.Error("expected error for nil Source/DestinationAddress, got nil")
+		t.Error("expected error for nil DestinationAddress, got nil")
 	}
 }
 
@@ -492,5 +507,23 @@ func TestInfoToProtoRejectsOutOfRangeReceivedTimestamp(t *testing.T) {
 	}
 	if _, err := info.ToProto(); err == nil {
 		t.Error("expected error for out-of-range ReceivedTimestamp, got nil")
+	}
+}
+
+// TestForwardingInfoElementToProtoAcceptsNilSource is the ToProto-side
+// mirror of TestForwardingInfoElementFromProtoAcceptsMissingSource.
+func TestForwardingInfoElementToProtoAcceptsNilSource(t *testing.T) {
+	fie := ForwardingInfoElement{
+		Agent:               Agent{ID: "agent-1"},
+		SourceAddress:       nil,
+		DestinationAddress:  mustParseIP(t, "192.0.2.2"),
+		ProductionTimestamp: time.Now(),
+	}
+	proto, err := fie.ToProto()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if proto.SourceAddress != "" {
+		t.Errorf("SourceAddress: got %q, want empty string", proto.SourceAddress)
 	}
 }
