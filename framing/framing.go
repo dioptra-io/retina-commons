@@ -117,14 +117,20 @@ func Send(conn net.Conn, timeout time.Duration, msg proto.Message) error {
 		return fmt.Errorf("failed to set write deadline: %w", err)
 	}
 
-	var header [4]byte
-	binary.BigEndian.PutUint32(header[:], uint32(len(payload)))
+	// Header and payload are combined into a single buffer and written
+	// with one writeFull call, not two separate calls — two conn.Write
+	// calls can surface as two separate TCP segments (confirmed via
+	// packet capture: each carries its own PSH flag and ~66 bytes of
+	// Ethernet+IP+TCP framing overhead on a typical link), even without
+	// Nagle's algorithm coalescing them. For small messages like a single
+	// PD or FIE, that doubled framing overhead can exceed the payload
+	// itself.
+	frame := make([]byte, 4+len(payload))
+	binary.BigEndian.PutUint32(frame[:4], uint32(len(payload)))
+	copy(frame[4:], payload)
 
-	if err := writeFull(conn, header[:]); err != nil {
-		return fmt.Errorf("failed to write header: %w", err)
-	}
-	if err := writeFull(conn, payload); err != nil {
-		return fmt.Errorf("failed to write payload: %w", err)
+	if err := writeFull(conn, frame); err != nil {
+		return fmt.Errorf("failed to write frame: %w", err)
 	}
 	return nil
 }
