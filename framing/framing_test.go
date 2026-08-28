@@ -355,49 +355,46 @@ func TestReceiveRejectsNegativeTimeout(t *testing.T) {
 	}
 }
 
-// -- Additional coverage: Send payload-write failure -----------------------
+// -- Additional coverage: writeFull's retry-then-fail path ------------------
 
-// failAfterHeaderConn lets the 4-byte header write through untouched
-// (so Send gets past that point), then fails every subsequent write —
-// exercising the "failed to write payload" branch, which the short-write
-// test doesn't reach since it always succeeds eventually.
-type failAfterHeaderConn struct {
+// failAfterPartialWriteConn accepts only 1 byte on its first Write call
+// (a short write, which writeFull is designed to retry with the
+// remainder), then fails outright on the retry — exercising a partial
+// success followed by a failure, which a write that either fully
+// succeeds or fails immediately can't reach. This replaces the old
+// header-vs-payload split (Send used to make two separate writeFull
+// calls; now it's one, over a combined header+payload buffer — see
+// Send's doc comment).
+type failAfterPartialWriteConn struct {
 	net.Conn
-	headerWritten bool
+	wrote bool
 }
 
-func (c *failAfterHeaderConn) Write(p []byte) (int, error) {
-	if !c.headerWritten && len(p) == 4 {
-		c.headerWritten = true
-		return c.Conn.Write(p)
+func (c *failAfterPartialWriteConn) Write(p []byte) (int, error) {
+	if !c.wrote {
+		c.wrote = true
+		if len(p) > 1 {
+			return 1, nil
+		}
+		return len(p), nil
 	}
 	return 0, errors.New("simulated write failure")
 }
 
-func TestSendFailsOnPayloadWriteError(t *testing.T) {
-	client, server := net.Pipe()
+func TestSendFailsAfterPartialFrameWrite(t *testing.T) {
+	client, _ := net.Pipe()
 	defer closeQuietly(client)
-	defer closeQuietly(server)
 
-	wrapped := &failAfterHeaderConn{Conn: client}
-
-	// The header write blocks until read on a real net.Pipe, so drain it
-	// on the other end before Send attempts the payload write.
-	go func() {
-		header := make([]byte, 4)
-		_, _ = io.ReadFull(server, header)
-	}()
-
-	err := Send(wrapped, time.Second, &wire.ProbingDirective{DestinationAddress: "192.0.2.1"})
+	wrapped := &failAfterPartialWriteConn{Conn: client}
+	err := Send(wrapped, 0, &wire.ProbingDirective{DestinationAddress: "192.0.2.1"})
 	if err == nil {
-		t.Fatal("expected error for failed payload write, got nil")
+		t.Fatal("expected error after a short write followed by a failed retry, got nil")
 	}
 }
 
-// -- Additional coverage: Send deadline and header-write failures ----------
+// -- Additional coverage: Send deadline and immediate write failures -------
 
-// failAllWritesConn fails every write immediately, including the header —
-// unlike failAfterHeaderConn, which lets the header through first.
+// failAllWritesConn fails every write immediately.
 type failAllWritesConn struct {
 	net.Conn
 }
