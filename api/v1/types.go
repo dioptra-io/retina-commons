@@ -67,7 +67,8 @@ type NextHeader struct {
 // NearTTL+1) to detect forwarding behavior between adjacent hops.
 type ProbingDirective struct {
 	// ProbingDirectiveID is assigned by the generator to track this directive.
-	ProbingDirectiveID uint64 `json:"probing_directive_id"`
+	// It is 32-bit: the orchestrator assigns and stores IDs as uint32.
+	ProbingDirectiveID uint32 `json:"probing_directive_id"`
 
 	IPVersion          IPVersion `json:"ip_version"`
 	Protocol           Protocol  `json:"protocol"`
@@ -107,7 +108,7 @@ type ForwardingInfoElement struct {
 	Agent Agent `json:"agent"`
 
 	// ProbingDirectiveID links this result to its originating directive.
-	ProbingDirectiveID uint64 `json:"probing_directive_id"`
+	ProbingDirectiveID uint32 `json:"probing_directive_id"`
 
 	IPVersion          IPVersion `json:"ip_version"`
 	Protocol           Protocol  `json:"protocol"`
