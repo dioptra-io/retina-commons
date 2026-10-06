@@ -31,7 +31,7 @@ import (
 	"net"
 	"time"
 
-	wire "github.com/dioptra-io/retina-commons/wire/v2"
+	wire "github.com/dioptra-io/retina-commons/v2/wire/v2"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 

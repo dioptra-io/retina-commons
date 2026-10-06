@@ -1,4 +1,4 @@
-module github.com/dioptra-io/retina-commons
+module github.com/dioptra-io/retina-commons/v2
 
 go 1.24.4
 

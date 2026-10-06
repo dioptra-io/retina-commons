@@ -875,7 +875,7 @@ const file_wire_v2_wire_proto_rawDesc = "" +
 	"\x14PROTOCOL_UNSPECIFIED\x10\x00\x12\x11\n" +
 	"\rPROTOCOL_ICMP\x10\x01\x12\x10\n" +
 	"\fPROTOCOL_UDP\x10\x11\x12\x13\n" +
-	"\x0fPROTOCOL_ICMPV6\x10:B3Z1github.com/dioptra-io/retina-commons/wire/v2;wireb\x06proto3"
+	"\x0fPROTOCOL_ICMPV6\x10:B6Z4github.com/dioptra-io/retina-commons/v2/wire/v2;wireb\x06proto3"
 
 var (
 	file_wire_v2_wire_proto_rawDescOnce sync.Once
