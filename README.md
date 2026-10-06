@@ -89,6 +89,71 @@ if err != nil {
     // handle error
 }
 data, err := proto.Marshal(msg)
+```
+
+Receiving side:
+
+```go
+var in wire.ProbingDirective
+if err := proto.Unmarshal(data, &in); err != nil {
+    // handle error
+}
+pd, err := model.ProbingDirectiveFromProto(&in)
+```
+
+## Model layer
+
+`model` mirrors `wire/v2` with idiomatic Go types: `uint8` TTLs, `net.IP`
+addresses, `time.Time` timestamps, and `ID` instead of `Id` in field names. It
+covers `ProbingDirective`, `ForwardingInfoElement`, and their dependencies
+(`Agent`, `Info`). `NextHeader` stays the native `wire.NextHeader`.
+
+Conversion is validating in both directions:
+
+- `FromProto` rejects TTL overflow, unparseable or missing required IPs, and
+  absent or invalid timestamps, rather than truncating or normalizing.
+- `ToProto` checks required fields before serializing, so a malformed model
+  value can't produce a wire message that `FromProto` would reject.
+- Passing `nil` to a `FromProto` function is an error. A required nested field
+  missing inside an otherwise valid message (e.g. `ForwardingInfoElement.Agent`)
+  is a validation failure.
+- `NearInfo`/`FarInfo` are nilable: `nil` means the probe timed out. When
+  present, an `Info` always carries both timestamps. `SourceAddress` is nil when
+  unavailable (e.g. both probes timed out).
+
+Compare IPs with `net.IP.Equal` and times with `time.Time.Equal`, not `==`.
+IPv4 addresses are normalized to 4-byte form, and times come back in UTC.
+
+## Wire format
+
+Messages are defined in [`wire/v2/wire.proto`](wire/v2/wire.proto). Conventions:
+
+- IP addresses are canonical textual strings, without port or zone identifier.
+- Timestamps are `google.protobuf.Timestamp`, always UTC.
+- `IPVersion` and `Protocol` enum values match IP version numbers and IANA
+  protocol numbers.
+- `AuthRequest`/`AuthResponse` must only be exchanged over mutually
+  authenticated TLS. Never log `secret`.
+- PD files are JSONL: one
+  [protojson](https://pkg.go.dev/google.golang.org/protobuf/encoding/protojson)-encoded
+  `ProbingDirective` per line.
+
+### Regenerating
+
+Generated code is checked in, so consumers need no protobuf tooling. To
+regenerate after editing `wire.proto`, install
+[`buf`](https://buf.build/docs/installation) and `protoc-gen-go` v1.36.12:
+
+```bash
+go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.12
+make generate
+```
+
+Commit `wire.proto` and `wire.pb.go` together. Never edit `wire.pb.go` by hand.
+
+## Development
+
+Run `make help` for available targets. Run tests with `make test`.
 
 ## License
 
