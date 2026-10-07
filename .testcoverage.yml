@@ -1,0 +1,10 @@
+profile: coverage.out
+
+threshold:
+  package: 90
+  total: 90
+
+exclude:
+  paths:
+    - \.pb\.go$
+    - (^|/)api/
