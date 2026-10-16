@@ -204,7 +204,7 @@ func InfoFromProto(i *wire.Info) (Info, error) {
 	}, nil
 }
 
-func (i Info) ToProto() (*wire.Info, error) {
+func (i *Info) ToProto() (*wire.Info, error) {
 	if err := validateIP(i.ReplyAddress, false, "reply_address"); err != nil {
 		return nil, err
 	}
@@ -361,7 +361,7 @@ func ForwardingInfoElementFromProto(fie *wire.ForwardingInfoElement) (Forwarding
 // address to report; see package doc) — before serializing, so a
 // malformed model value can't silently produce a wire message that
 // FromProto would itself reject.
-func (fie ForwardingInfoElement) ToProto() (*wire.ForwardingInfoElement, error) {
+func (fie *ForwardingInfoElement) ToProto() (*wire.ForwardingInfoElement, error) {
 	if err := validateIP(fie.SourceAddress, false, "source_address"); err != nil {
 		return nil, err
 	}

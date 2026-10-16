@@ -18,7 +18,7 @@ import (
 // -- test helpers -------------------------------------------------------------
 
 // mustMarshal marshals v to JSON or fails the test.
-func mustMarshal(t *testing.T, v interface{}) []byte {
+func mustMarshal(t *testing.T, v any) []byte {
 	t.Helper()
 	data, err := json.Marshal(v)
 	if err != nil {
@@ -28,7 +28,7 @@ func mustMarshal(t *testing.T, v interface{}) []byte {
 }
 
 // mustUnmarshal unmarshals data into v or fails the test.
-func mustUnmarshal(t *testing.T, data []byte, v interface{}) {
+func mustUnmarshal(t *testing.T, data []byte, v any) {
 	t.Helper()
 	if err := json.Unmarshal(data, v); err != nil {
 		t.Fatalf("failed to unmarshal: %v", err)
@@ -36,7 +36,7 @@ func mustUnmarshal(t *testing.T, data []byte, v interface{}) {
 }
 
 // jsonRoundTrip marshals and unmarshals v, returning the result.
-func jsonRoundTrip(t *testing.T, v interface{}, result interface{}) {
+func jsonRoundTrip(t *testing.T, v, result any) {
 	t.Helper()
 	data := mustMarshal(t, v)
 	mustUnmarshal(t, data, result)

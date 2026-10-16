@@ -126,7 +126,7 @@ func Send(conn net.Conn, timeout time.Duration, msg proto.Message) error {
 	// PD or FIE, that doubled framing overhead can exceed the payload
 	// itself.
 	frame := make([]byte, 4+len(payload))
-	binary.BigEndian.PutUint32(frame[:4], uint32(len(payload)))
+	binary.BigEndian.PutUint32(frame[:4], uint32(len(payload))) //nolint:gosec // len(payload) <= maxFrameSize checked above
 	copy(frame[4:], payload)
 
 	if err := writeFull(conn, frame); err != nil {
